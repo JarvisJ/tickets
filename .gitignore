@@ -161,3 +161,12 @@ pip-log.txt
 
 # Mac crap
 .DS_Store
+
+# config file
+
+config.json
+*.js~
+*.json~
+node_modules
+*.gitignore~
+*.html~
