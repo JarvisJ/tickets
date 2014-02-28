@@ -47,7 +47,10 @@ Db.connect(dbURL, function(err, db) {
 								 myConn = db;
 								 
 								 insertPrices(db,newRec, function(histDat) {
-								 		 var resData = {"latestPrices": dat, "histPrices": histDat };
+								 		// console.log(histDat);
+								 		 var resData = {"event": dat.eventTicketListing.event, "histPrices": histDat,
+															 "deliveryTypes": dat.eventTicketListing.deliveryTypes, "eventUrlPath": dat.eventTicketListing.eventUrlPath,
+															 "genreUrlPath": dat.eventTicketListing.genreUrlPath};
 								 		 res.json(resData);	 
 									 //console.log("done with insert");
 								 });	 		 	 		 
@@ -88,6 +91,7 @@ function insertPrices(db,newPrices, callback) {
 						ticketHash[tickAry[i].id] = { "pr": new Array(item.dateAry.length-1),
 																"qt":  new Array(item.dateAry.length-1),
 																"va": tickAry[i].va,
+																"vi": tickAry[i].vi,																		
 																"rd": tickAry[i].rd,
 																"se": tickAry[i].se,	
 																"dt": tickAry[i].dt
@@ -103,12 +107,13 @@ function insertPrices(db,newPrices, callback) {
 					}
 					
 				}	
+					
+				newRec = {"eventID": eventID, "dateAry":item.dateAry, "totalQtAry": item.totalQtAry, "ticketHash": ticketHash };
 						
 				if( doInsertRecord) {
 					console.log("inserting record");
 				
 	
-					newRec = {"eventID": eventID, "dateAry":item.dateAry, "totalQtAry": item.totalQtAry, "ticketHash": ticketHash };
 					priceCollection.update({"eventID": eventID},
 						newRec,insertCallback);				
 				}
@@ -121,6 +126,7 @@ function insertPrices(db,newPrices, callback) {
 					ticketHash[tickAry[i].id] = { "pr": [tickAry[i].tc.amount],
 															"qt": [tickAry[i].qt],
 																"va": tickAry[i].va,
+																"vi": tickAry[i].vi,																		
 																"rd": tickAry[i].rd,
 																"se": tickAry[i].se,	
 																"dt": tickAry[i].dt

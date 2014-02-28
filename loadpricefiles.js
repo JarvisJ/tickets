@@ -65,6 +65,7 @@ function insertPrices(db,newPrices, callback) {
 						ticketHash[tickAry[i].id] = { "pr": new Array(item.dateAry.length-1),
 																"qt":  new Array(item.dateAry.length-1),
 																"va": tickAry[i].va,
+																"vi": tickAry[i].vi,																
 																"rd": tickAry[i].rd,
 																"se": tickAry[i].se,	
 																"dt": tickAry[i].dt
@@ -98,6 +99,7 @@ function insertPrices(db,newPrices, callback) {
 					ticketHash[tickAry[i].id] = { "pr": [tickAry[i].tc.amount],
 															"qt": [tickAry[i].qt],
 																"va": tickAry[i].va,
+																"vi": tickAry[i].vi,																		
 																"rd": tickAry[i].rd,
 																"se": tickAry[i].se,	
 																"dt": tickAry[i].dt

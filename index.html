@@ -36,7 +36,7 @@
 
 </style>
 <body>
-<h2>Stubhub tickets</h2>
+<h2></h2>
 
 <div id="info"></div>
 
@@ -48,6 +48,8 @@ var width = 960,
 
 var arenaArray = [];
 var arenaData;
+
+var arenaK = 0.2;
 
 
 var svg = d3.select("body").append("svg")
@@ -85,6 +87,8 @@ var curcircles = svg.append("svg:g")
     .attr("id", "circles");       
     
 var infoDiv = d3.select("#info");
+    
+var h2Tag = d3.select("h2");
 var ticketData;
 
 var crislerFilename = "json/crisler.json";
@@ -152,13 +156,15 @@ var crislerRowFunc = function(d) {
 var rowFunc = arenaFile == crislerFilename ? crislerRowFunc: consecoRowFunc; 
 var curPrices;
 
-d3.json("/curprices/4374340",function(pCurPrices) {
-		curPrices = pCurPrices.latestPrices.eventTicketListing.eventTicket;
+// 4351791 -- IU/Michigan
+d3.json("/curprices/4351791",function(pCurPrices) {
+		curPrices = pCurPrices.histPrices;
+		histPrices = pCurPrices.histPrices;
+		
+		h2Tag.html(pCurPrices.event.description);
+		
 	 d3.json(arenaFile,function(json) {
 			  arenaData = json;
-			  d3.json("json/sessionone-02-20-2014-10-24-00-00-00.json", function(json2) {
-			//		  d3.json("json/michiganmsu4351789-02-20-2014-10-00-00-00-00.json",function(json2) {
-					ticketData = json2.eventTicketListing.eventTicket;  
 					  
 				  for( var key in arenaData ) {
 					  arenaData[key].secID = key;
@@ -167,6 +173,12 @@ d3.json("/curprices/4374340",function(pCurPrices) {
 					  arenaArray.push(arenaData[key]); 
 				  }                                                                                        
 			  
+				  ticketData = [];
+				  for( var key in histPrices.ticketHash ) {
+  				  	  histPrices.ticketHash[key].id = key; 
+					  ticketData.push(histPrices.ticketHash[key]); 
+				  }        
+				  
 				  for( var i = 0; i < ticketData.length; i++ ) {
 					  if(ticketData[i].vi) {
 						  arenaData[ticketData[i].vi].ticketArray.push( ticketData[i]);
@@ -187,8 +199,8 @@ d3.json("/curprices/4374340",function(pCurPrices) {
 					})
 					.style("fill",function(d) { return "white" })
 					.attr("stroke","black")
-					.attr("stroke-width","2px")
-					.attr("transform", "scale(.2)")
+					.attr("stroke-width","4px")
+					.attr("transform", "scale(" + arenaK + ")")
 					.style("visibility", function(d) { return d.secID=="bbox"? "hidden":"" })
 					 // .on("click", click)
 					  .on("mouseover", function(d){
@@ -257,16 +269,21 @@ d3.json("/curprices/4374340",function(pCurPrices) {
 					  .data(ticketData)
 					.enter().append("circle")
 					.attr("r", function(d) { 
-								return "20px";
+							if( d.qt[0] ) {
+							return "20px";
+							}
+							else {
+								return "0px";	
+							}
 					})
 					.style("fill",function(d) { return "red" })
 					.attr("stroke","black")
 					.style("stroke-width", "0.3px")             
-					.attr("transform", "scale(.2)")
+					.attr("transform", "scale(" + arenaK + ")")
 					 // .on("click", click)
 					  .on("mouseover", function(d){
 							d3.select(this).style("fill","yellow");
-							infoDiv.html("Qty: " + d.qt + " Sec:" + d.va + " Row: " + d.rd + " Seats: " + d.se + " Price: <b>$" + d.tc.amount + "</b>");
+							infoDiv.html("Qty: " + d.qt[0] + " Sec:" + d.va + " Row: " + d.rd + " Seats: " + d.se + " Price: <b>$" + d.pr[0] + "</b>");
 					  //d3.selectAll("[chv^='chv_"+d.region.substring(4,6)+"_']").attr("class",getCountyDistrictColor);
 					  })  
 					  .on("mouseout",function(d){
@@ -312,23 +329,42 @@ d3.json("/curprices/4374340",function(pCurPrices) {
 				.attr("cx", arenaData["bbox"].centroid[0])
 				.attr("cy", arenaData["bbox"].centroid[1])
 				.style("fill","blue")
-				.attr("transform","scale(.2)");
+				.attr("transform","scale(" + arenaK + ")");
 			  
 				curcircles.selectAll("circle")
-					  .data(curPrices)
+					  .data(ticketData)
 					.enter().append("circle")
 					.attr("r", function(d) { 
+							if(d.qt[d.qt.length-1] && d.qt.length == curPrices.dateAry.length) {
 								return "20px";
+							}
+							else {
+								return "0";	
+							}
 					})
 					.style("fill",function(d) { return "green" })
 					.attr("stroke","black")
 					.style("stroke-width", "0.3px")       
 					.attr("fill-opacity", "0.5")
-					.attr("transform", "scale(.2)")
+					.attr("transform", "scale(" + arenaK + ")")
 					 // .on("click", click)
 					  .on("mouseover", function(d){
 							d3.select(this).style("fill","yellow");
-							infoDiv.html("Qty: " + d.qt + " Sec: " + d.va + " Row: " + d.rd + " Seats: " + d.se + " Price: <b>$" + d.tc.amount + "</b> (Ticket Available)");
+							
+							var prices = ""
+							for( var i = 0; i < d.pr.length; i++ ) {
+							
+								if( !d.pr[i] ) {
+									prices += " N/L ";	
+								}
+								else if( i == d.pr.length-1) {
+									prices += " <b>$" + d.pr[i] + "</b>";	
+								}
+								else {
+									prices += " $" + d.pr[i] + "";
+								}
+							}
+							infoDiv.html("Qty: " + d.qt[d.qt.length-1] + " Sec: " + d.va + " Row: " + d.rd + " Seats: " + d.se + " Price: " + prices + " (Ticket Available)");
 					  //d3.selectAll("[chv^='chv_"+d.region.substring(4,6)+"_']").attr("class",getCountyDistrictColor);
 					  })  
 					  .on("mouseout",function(d){
@@ -370,8 +406,7 @@ d3.json("/curprices/4374340",function(pCurPrices) {
 						.attr("cy", rowFunc)        ;   
 					
 					  
-			  });
-	});  
+		});  
 });
       
 </script>
