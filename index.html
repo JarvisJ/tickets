@@ -153,7 +153,7 @@ var rowFunc = arenaFile == crislerFilename ? crislerRowFunc: consecoRowFunc;
 var curPrices;
 
 d3.json("/curprices/4374340",function(pCurPrices) {
-		curPrices = pCurPrices.eventTicketListing.eventTicket;
+		curPrices = pCurPrices.latestPrices.eventTicketListing.eventTicket;
 	 d3.json(arenaFile,function(json) {
 			  arenaData = json;
 			  d3.json("json/sessionone-02-20-2014-10-24-00-00-00.json", function(json2) {

@@ -266,7 +266,7 @@ d3.json("/curprices/4374340",function(pCurPrices) {
 					 // .on("click", click)
 					  .on("mouseover", function(d){
 							d3.select(this).style("fill","yellow");
-							infoDiv.html("Qty: " + d.qt + " Sec:" + d.va + " Row: " + d.rd + " Seats: " + d.se + " Price: <b>$" + d.cp + "</b>");
+							infoDiv.html("Qty: " + d.qt + " Sec:" + d.va + " Row: " + d.rd + " Seats: " + d.se + " Price: <b>$" + d.tc.amount + "</b>");
 					  //d3.selectAll("[chv^='chv_"+d.region.substring(4,6)+"_']").attr("class",getCountyDistrictColor);
 					  })  
 					  .on("mouseout",function(d){
@@ -328,7 +328,7 @@ d3.json("/curprices/4374340",function(pCurPrices) {
 					 // .on("click", click)
 					  .on("mouseover", function(d){
 							d3.select(this).style("fill","yellow");
-							infoDiv.html("Qty: " + d.qt + " Sec: " + d.va + " Row: " + d.rd + " Seats: " + d.se + " Price: <b>$" + d.cp + "</b> (Ticket Available)");
+							infoDiv.html("Qty: " + d.qt + " Sec: " + d.va + " Row: " + d.rd + " Seats: " + d.se + " Price: <b>$" + d.tc.amount + "</b> (Ticket Available)");
 					  //d3.selectAll("[chv^='chv_"+d.region.substring(4,6)+"_']").attr("class",getCountyDistrictColor);
 					  })  
 					  .on("mouseout",function(d){
