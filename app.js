@@ -9,9 +9,9 @@ var ObjectID = require('mongodb').ObjectID;
 
 var dbURL = "mongodb://" + config.appSettings.mongolab.DB_USERNAME + ":" + config.appSettings.mongolab.DB_PASS + "@ds030827.mongolab.com:30827/MongoLab-cf";
 
-
+var port = process.env.PORT || 1337;
 var app = express.createServer();
-app.listen(3000);
+app.listen(port);
 
 
 app.get('/', function (req, res) {
