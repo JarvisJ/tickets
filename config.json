@@ -1,0 +1,9 @@
+{
+	"appSettings": {"mongolab": {
+											"DB_PASS":"1mr.fluff",
+											"DB_USERNAME":"tickets"
+										}
+	
+						},
+	"eventList":[4374340,4373478,4374341,4373479,4374342,4380727,4351791,4373476]
+}
