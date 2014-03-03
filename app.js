@@ -25,47 +25,67 @@ app.get('/ndireport.js', function (req, res) {
 
 Db.connect(dbURL, function(err, db) {
 	app.get('/curprices/:eventid', function (req, res) {
-	
-		var jsonData = "";
-		var file_url = "http://www.stubhub.com/ticketAPI/restSvc/event/" + req.params.eventid + "/sort/price/0";		
-		var options = {
-			 host: url.parse(file_url).host,
-			 port: 80,
-			 path: url.parse(file_url).pathname
-		};
-		http.get(options, function(resp) {
-			 resp.on('data', function(data) {
-				  jsonData += data;
-			 });
-			 resp.on('end', function() {
-					 try {
-						 dat = JSON.parse(jsonData);
-						 newRec = {"downloadDate":new Date(),"priceData": dat};
-						 
-						 Db.connect(dbURL, function(err, db) {
-								 
-								 myConn = db;
-								 
-								 insertPrices(db,newRec, function(histDat) {
-								 		// console.log(histDat);
-								 		 var resData = {"event": dat.eventTicketListing.event, "histPrices": histDat,
-															 "deliveryTypes": dat.eventTicketListing.deliveryTypes, "eventUrlPath": dat.eventTicketListing.eventUrlPath,
-															 "genreUrlPath": dat.eventTicketListing.genreUrlPath};
-								 		 res.json(resData);	 
-									 //console.log("done with insert");
-								 });	 		 	 		 
-						 });
-					 }
-					 catch(err) {
-						 console.log("JSON parse error: " + err.message);
-						 res.json(["Error getting pricing data"]);
-					 }
-			 });
-		})
-		.on('error', function(e) {
-		  console.log("Got error: " + e.message);
-		});
+		var inOurEventList = false;
 		
+		for( var i = 0; i < config.eventList.length; i++ ) {
+			//console.log( config.eventList[i]  + " " + req.params.eventid);
+			if( config.eventList[i] == req.params.eventid ) {
+				inOurEventList = true;
+				break;
+			}
+		}
+		
+		if( inOurEventList ) {
+				
+			var jsonData = "";
+			var file_url = "http://www.stubhub.com/ticketAPI/restSvc/event/" + req.params.eventid + "/sort/price/0";		
+			var options = {
+				 host: url.parse(file_url).host,
+				 port: 80,
+				 path: url.parse(file_url).pathname
+			};
+			http.get(options, function(resp) {
+				 resp.on('data', function(data) {
+					  jsonData += data;
+				 });
+				 resp.on('end', function() {
+						 try {
+							 dat = JSON.parse(jsonData);
+							 newRec = {"downloadDate":new Date(),"priceData": dat};
+							 
+							 Db.connect(dbURL, function(err, db) {
+									 
+									 myConn = db;
+									 
+									 try {								 	 
+										 insertPrices(db,newRec, function(histDat) {
+											// console.log(histDat);
+											 var resData = {"event": dat.eventTicketListing.event, "histPrices": histDat,
+																 "deliveryTypes": dat.eventTicketListing.deliveryTypes, "eventUrlPath": dat.eventTicketListing.eventUrlPath,
+																 "genreUrlPath": dat.eventTicketListing.genreUrlPath};
+											 res.json(resData);
+										 });
+									 }
+									 catch( err) {
+										console.log(err); 
+									 }
+										 //console.log("done with insert");
+																 
+							 });
+						 }
+						 catch(err) {
+							 console.log("JSON parse error: " + err.message);
+							 res.json(["Error getting pricing data"]);
+						 }
+				 });
+			})
+			.on('error', function(e) {
+			  console.log("Got error: " + e.message);
+			});
+		}	
+		else {
+			res.json(["Sorry, we are not tracking this event."]);	
+		}
 	
 	});
 });
@@ -76,7 +96,7 @@ function insertPrices(db,newPrices, callback) {
 	var tickAry = newPrices.priceData.eventTicketListing.eventTicket;
 	var eventID = newPrices.priceData.eventTicketListing.event.id;
 	var newRec = undefined;
-	
+		
 	priceCollection.findOne({"eventID": eventID}, function (err, item) {
 			if(item) {
 				var ticketHash = item.ticketHash;

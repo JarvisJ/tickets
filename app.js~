@@ -46,12 +46,20 @@ Db.connect(dbURL, function(err, db) {
 								 
 								 myConn = db;
 								 
-								 insertPrices(db,newRec, function(histDat) {
+								 try {
+								 	 insertPrices(db,newRec, function(histDat) {
 								 		// console.log(histDat);
-								 		 var resData = {"latestPrices": dat, "histPrices": histDat };
-								 		 res.json(resData);	 
+								 		 var resData = {"event": dat.eventTicketListing.event, "histPrices": histDat,
+															 "deliveryTypes": dat.eventTicketListing.deliveryTypes, "eventUrlPath": dat.eventTicketListing.eventUrlPath,
+															 "genreUrlPath": dat.eventTicketListing.genreUrlPath};
+								 		 res.json(resData);
+								 	 });
+								 }
+								 catch( err) {
+								 	console.log(err); 
+								 }
 									 //console.log("done with insert");
-								 });	 		 	 		 
+									 	 		 	 		 
 						 });
 					 }
 					 catch(err) {
