@@ -70,7 +70,10 @@ text {
 </div>
 
 <div id="arenaDiv" style=" float: left "></div>
-<div id="scatterDiv" style=" float: left "></div>
+<div id="scatterDiv" style=" float: left ">
+	<div style=" float: left">Price Movement Since: <select  id="scatterDatePulldown" ></select></div>
+	<div  id="scatterDateDiv"> </div>	
+</div>
 <div id="info" style=" float: left " ></div>
 
 <script type="text/javascript" >
@@ -85,6 +88,8 @@ var arenaData;
 var arenaK = 0.15;
 var eventPulldown = d3.select("#eventPulldown");
 
+var scatterDatePulldown = d3.select("#scatterDatePulldown");			 
+	
 var svg = d3.select("#arenaDiv").append("svg")
     .attr("width", width)
     .attr("height", height)
@@ -121,7 +126,8 @@ var curcircles = svg.append("svg:g")
     .attr("id", "circles");       
     
 var infoDiv = d3.select("#info");
-    
+var scatterDateDiv = d3.select("#scatterDateDiv");
+
 var h2Tag = d3.select("h2");
 var ticketData;
 
@@ -231,6 +237,19 @@ function refreshPage() {
 	d3.json("/curprices/" + eventID,function(pCurPrices) {
 			curPrices = pCurPrices.histPrices;
 			histPrices = pCurPrices.histPrices;
+			
+			var scatterDatePulldown = d3.select("#scatterDatePulldown");	
+			scatterDatePulldown.selectAll("option")
+					.data(curPrices.dateAry).enter()
+					 .append("option") 
+						.attr("value",function(d,i){
+								 return i;
+									})
+						.attr("label",function(d){
+							var myDate = new Date(d);
+							return myDate.toLocaleDateString() + " " + myDate.toLocaleTimeString() ;
+						});            
+			scatterDatePulldown.on("change", refreshScatter);	
 			
 			if(eventID== 4351791) {
 				arenaFile = crislerFilename;
@@ -379,7 +398,7 @@ function refreshPage() {
 						.style("fill",circleFill)
 						.attr("stroke","black")
 						.style("stroke-width", "1.5px")       
-						.attr("fill-opacity", ".5")
+						.attr("fill-opacity", ".8")
 						.attr("transform", "scale(" + arenaK + ")")
 						 // .on("click", click)
 						  .on("mouseover", updateTicketInfo)  
@@ -490,6 +509,13 @@ function getSectionAdjustedRow(row,sec) {
 	return row+22;
 }
 
+function refreshScatter() {
+	if(scatterSvg) 
+		d3.select("#scatterDiv svg").remove();	
+	
+	createScatterPlot(ticketData);
+}
+
 function createScatterPlot(data) {
 	var margin = {top: 20, right: 20, bottom: 30, left: 60},
 		 width = 500 - margin.left - margin.right,
@@ -511,6 +537,8 @@ function createScatterPlot(data) {
 		 .scale(y)
 		 .orient("left");
 	
+	var sinceDateIdx = +scatterDatePulldown[0][0].options[scatterDatePulldown[0][0].selectedIndex].value;
+	
 	var svg = d3.select("#scatterDiv").append("svg")
 		 .attr("width", width + margin.left + margin.right)
 		 .attr("height", height + margin.top + margin.bottom)
@@ -526,7 +554,7 @@ function createScatterPlot(data) {
 	  	  	).nice();
 	  y.domain(d3.extent(data, function(d) { 
 	  		if( d.pr[d.pr.length-1] && !isNaN(d.pr[d.pr.length-1]) ) {	
-	  			var maxAmtVisible = eventID == 4373476? 1000 : 350;
+	  			var maxAmtVisible = eventID == 4373476? 1000 : 400;
 	  			if(d.pr[d.pr.length-1] < maxAmtVisible) 
 	  				return d.pr[d.pr.length-1];
 	  		}
@@ -570,12 +598,14 @@ function createScatterPlot(data) {
 			 //d3.selectAll("[chv^='chv_"+d.region.substring(4,6)+"_']").attr("class",getCountyColor);
 			 })			
 			.attr("r", 	 function(d) { 
+					d.curTransIdx = -1;
+					return "0"; 
 					if(d.pr.length > 1 && !isNaN(d.pr[d.pr.length-1])) {
 						if(!d.pr[curPrices.dateAry.length-1]) 
 							return "3.5";
 						
 						var lastVal =d.pr[d.pr.length-1]; 
-						for(var i = curPrices.dateAry.length-2; i >= 0 && i>= curPrices.dateAry.length-5; i-- ) { 
+						for(var i = curPrices.dateAry.length-2; i >= 0 && i>= sinceDateIdx; i-- ) { 
 							if( !d.pr[i] || isNaN(d.pr[i])) {
 								return "0";		
 							}
@@ -593,25 +623,149 @@ function createScatterPlot(data) {
 			})
 			.attr("cx", function(d) { return x(getSectionAdjustedRow(+d.rd,d.va)); })
 			.attr("cy", function(d) { 
-					d.lastPriceSeen = d.pr[0];
-					return y(d.pr[0]); 
+					if( !d.pr[sinceDateIdx]) {
+						return "";	
+					}
+					d.lastPriceSeen = d.pr[sinceDateIdx];
+					return y(d.pr[sinceDateIdx]); 
 			})
 			.style("fill", circleFill);
 	
 			;
-		for( var i = 0; i < curPrices.dateAry.length; i++ ) {			
-			dots = dots.transition()
-				.delay(1000)
+			
+		var trans = new Array(curPrices.dateAry.length+1);
+		trans[sinceDateIdx] = dots.transition().duration(1000);
+		var transStartIdx = 0;		
+			
+		for( var i = sinceDateIdx; i < curPrices.dateAry.length; i++ ) {			
+			
+			trans[i+1] = trans[i].transition()
 				.duration(1000)
+				.each("start", function(d,i) {
+						if( i == 0 ) {
+							var myDate = new Date(curPrices.dateAry[transStartIdx++]);
+							var dateStr =  myDate.toLocaleDateString() + " " + myDate.toLocaleTimeString() ;						
+							scatterDateDiv.html("<b>" + dateStr + "</b>");
+						}
+				})
 				.attr("cy", function(d) {
-						
+						d.curTransIdx = i;
 						if( d.pr[i] ) {
 							d.lastPriceSeen = d.pr[i];
+							
 							return y(d.pr[i]);
 						}
 						
+						if( !d.lastPriceSeen) { 
+							return "";	
+						}
+						
 						return y(d.lastPriceSeen);
-				});
+				})
+			.attr("r", 	 function(d) { 
+					if(d.pr.length > 1 && !isNaN(d.pr[d.pr.length-1])) {
+						if(!d.pr[i] && !d.lastPriceSeen) { 
+							return "";	
+						}
+						
+						
+						if(!d.pr[curPrices.dateAry.length-1]) 
+							return "3.5";
+						
+						var lastVal =d.pr[d.pr.length-1]; 
+						for(var i = curPrices.dateAry.length-2; i >= 0 && i>= sinceDateIdx; i-- ) { 
+							if( !d.pr[i] || isNaN(d.pr[i])) {
+								return "0";		
+							}
+							
+							if( +d.pr[i] < lastVal) {
+								return "3.5";	
+							}
+							if( +d.pr[i] > lastVal ) {
+								return "3.5";	
+							}
+						}
+					}
+					   
+				return "0"; 
+			})
+			.style("fill", function(d) {
+					if(i==0 ) {    
+						d.lastFillPriceSeen = d.pr[i];						
+						d.lastFillColor = "grey";
+						return d.lastFillColor;	
+					}
+					if(i == curPrices.dateAry.length-1) {
+						d.lastFillColor = circleFill(d);
+						return d.lastFillColor;	
+					}
+					if(i >= d.pr.length && d.lastFillPriceSeen) {
+						d.lastFillColor = "blue";
+						return "blue";
+					}
+					
+					
+					if(d.pr[i]) {
+						if( !d.lastFillPriceSeen) { 
+							d.lastFillPriceSeen = d.pr[i];
+							d.lastFillColor = "grey";
+							return d.lastFillColor;
+						}
+						
+						if( +d.pr[i] >  d.lastFillPriceSeen ) {
+	
+							d.lastFillColor = "green";
+							var myRow = x(getSectionAdjustedRow(+d.rd,d.va));
+							if( myRow) {
+								var y1 = y(d.lastFillPriceSeen);
+								var y2 = y(+d.pr[i])
+								svg.append("line")
+									.attr("x1", myRow)
+									.attr("x2", myRow)
+									.attr("y1", y1)
+									.attr("y2", y2)
+									.style("stroke", "green")
+									.style("stroke-width",1);							
+							}
+							d.lastFillPriceSeen = +d.pr[i];
+							return d.lastFillColor;
+						}
+						if( +d.pr[i] <  d.lastFillPriceSeen ) {
+							
+							var myRow = x(getSectionAdjustedRow(+d.rd,d.va));
+							if(myRow) {
+								var y1 = y(d.lastFillPriceSeen);
+								var y2 = y(+d.pr[i])
+								svg.append("line")
+									.attr("x1", myRow)
+									.attr("x2", myRow)
+									.attr("y1", y1)
+									.attr("y2", y2)
+									.style("stroke", "red")
+									.style("stroke-width",1);
+							}
+							d.lastFillColor ="red";
+							d.lastFillPriceSeen = +d.pr[i];
+							return d.lastFillColor;
+						}			
+						                                                                                  
+						d.lastFillPriceSeen = +d.pr[i];
+						return d.lastFillColor;
+					}
+					else {
+						if ( d.lastFillPriceSeen ) {
+							d.lastFillColor = "blue";
+							return d.lastFillColor;	
+						}
+						else {
+							d.lastFillColor = "grey";
+							return d.lastFillColor;	
+						}
+					}
+					
+				
+					return "#9ecae1"; 					
+			});
 		}
 	
 
@@ -623,10 +777,13 @@ function circleFill(d) {
 			var lastVal =d.pr[d.pr.length-1]; 
 						if(!d.pr[curPrices.dateAry.length-1]) 
 							return "blue";
-			for(var i = curPrices.dateAry.length-2; i >= 0 && i>= curPrices.dateAry.length-5; i-- ) { 
+						
+			var sinceDateIdx = +scatterDatePulldown[0][0].options[scatterDatePulldown[0][0].selectedIndex].value;
+							
+			for(var i = curPrices.dateAry.length-2; i >= 0 && i>= sinceDateIdx; i-- ) { 
 				
 				if( !d.pr[i] || isNaN(d.pr[i])) {
-					return "#9ecae1";		
+					return "grey";		
 				}
 				
 				if( +d.pr[i] < lastVal) {
@@ -638,7 +795,7 @@ function circleFill(d) {
 			}
 		}
 		
-	return "#9ecae1"; 
+	return "grey"; 
 }
 
 </script>
