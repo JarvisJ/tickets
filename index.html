@@ -650,7 +650,7 @@ function createScatterPlot(data) {
 			
 		var trans = new Array(curPrices.dateAry.length+1);
 		trans[sinceDateIdx] = dots.transition().duration(1000);
-		var transStartIdx = 0;		
+		var transStartIdx = sinceDateIdx;		
 			
 		for( var i = sinceDateIdx; i < curPrices.dateAry.length; i++ ) {			
 			
