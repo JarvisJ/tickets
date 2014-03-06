@@ -13,6 +13,8 @@ var port = process.env.PORT || 1337;
 var app = express.createServer();
 app.listen(port);
 
+app.use(express.static(__dirname + '/public'));
+
 
 app.get('/', function (req, res) {
   res.header("Access-Control-Allow-Origin", "*");
@@ -176,13 +178,5 @@ function insertCallback(err, docs) {
 
 }
 
-app.use(express.static(__dirname + '/public'));
-
-
-app.get('/baseball.html', function (req, res) {
-
-		
-  res.sendfile(__dirname + '/baseball.html');
-});
 
 

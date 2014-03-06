@@ -71,7 +71,7 @@ text {
 
 <div id="arenaDiv" style=" float: left "></div>
 <div id="scatterDiv" style=" float: left ">
-	<div style=" float: left">Price Movement Since: <select  id="scatterDatePulldown" ></select></div>
+	<div style=" float: left">Min Qty: <select id="minQtyPulldown"></select> Price Movement Since: <select  id="scatterDatePulldown" ></select></div>
 	<div  id="scatterDateDiv"> </div>	
 </div>
 <div id="info" style=" float: left " ></div>
@@ -89,6 +89,7 @@ var arenaK = 0.15;
 var eventPulldown = d3.select("#eventPulldown");
 
 var scatterDatePulldown = d3.select("#scatterDatePulldown");			 
+var minQtyPulldown = d3.select("#minQtyPulldown");
 	
 var svg = d3.select("#arenaDiv").append("svg")
     .attr("width", width)
@@ -195,8 +196,8 @@ var crislerRowFunc = function(d) {
 
 var rowFunc = arenaFile == crislerFilename ? crislerRowFunc: consecoRowFunc; 
 var curPrices;
-var eventID;
-
+var eventID = getParameterByName("eid");
+var eventURL;
 // 4351791 -- IU/Michigan
 //4374340,4373478,4374341,4373479,4374342,4380727. 4373476--allsess
 
@@ -216,7 +217,21 @@ eventPulldown.selectAll("option")
                 return d.id;
                   })
          .attr("label",function(d){return d.name});            
-eventPulldown.on("change", refreshPage);
+         eventPulldown.on("change", function() {
+         	window.location.assign(location.pathname + "?eid=" +eventPulldown[0][0].options[eventPulldown[0][0].selectedIndex].value)		
+         });
+
+var minQtyValues = [1,2,3,4,5,6,7,8,9,10];         
+         
+if( !eventID ) {
+	eventID = "4373476";	
+}
+for( var i = 0; i < eventPulldown[0][0].options.length; i++ ) {
+	if(eventPulldown[0][0].options[i].value === eventID) {
+		eventPulldown[0][0].selectedIndex = i;
+	}
+}
+refreshPage();
 
 function refreshPage() { 
 	eventID = eventPulldown[0][0].options[eventPulldown[0][0].selectedIndex].value;
@@ -251,6 +266,17 @@ function refreshPage() {
 						});            
 			scatterDatePulldown.on("change", refreshScatter);	
 			
+			minQtyPulldown.selectAll("option")
+					.data(minQtyValues).enter()
+					 .append("option") 
+						.attr("value",function(d){
+								 return d;
+									})
+						.attr("label",function(d){
+							return d;
+						});            
+			minQtyPulldown.on("change", refreshScatter);				
+			
 			if(eventID== 4351791) {
 				arenaFile = crislerFilename;
 			}
@@ -260,7 +286,8 @@ function refreshPage() {
 			
 			rowFunc = arenaFile == crislerFilename ? crislerRowFunc: consecoRowFunc; 
 			
-			h2Tag.html("<a href='http://www.stubhub.com/"+ pCurPrices.genreUrlPath + "/" + pCurPrices.eventUrlPath + "' >" 
+			eventURL = "http://www.stubhub.com/"+ pCurPrices.genreUrlPath + "/" + pCurPrices.eventUrlPath 
+			h2Tag.html("<a href='"+ eventURL + "' >" 
 							+  pCurPrices.event.description + "</a>");
 			
 		 d3.json(arenaFile,function(json) {
@@ -400,7 +427,7 @@ function refreshPage() {
 						.style("stroke-width", "1.5px")       
 						.attr("fill-opacity", ".8")
 						.attr("transform", "scale(" + arenaK + ")")
-						 // .on("click", click)
+						.on("click", circleClick)
 						  .on("mouseover", updateTicketInfo)  
 						  .on("mouseout",function(d){
 								  d3.select(this).style("fill",circleFill);
@@ -538,6 +565,7 @@ function createScatterPlot(data) {
 		 .orient("left");
 	
 	var sinceDateIdx = +scatterDatePulldown[0][0].options[scatterDatePulldown[0][0].selectedIndex].value;
+	var minQty = +minQtyPulldown[0][0].options[minQtyPulldown[0][0].selectedIndex].value;	
 	
 	var svg = d3.select("#scatterDiv").append("svg")
 		 .attr("width", width + margin.left + margin.right)
@@ -599,6 +627,7 @@ function createScatterPlot(data) {
 			 })			
 			.attr("r", 	 function(d) { 
 					d.curTransIdx = -1;
+					d.lastPriceSeen = d.pr[sinceDateIdx];
 					return "0"; 
 					if(d.pr.length > 1 && !isNaN(d.pr[d.pr.length-1])) {
 						if(!d.pr[curPrices.dateAry.length-1]) 
@@ -629,13 +658,14 @@ function createScatterPlot(data) {
 					d.lastPriceSeen = d.pr[sinceDateIdx];
 					return y(d.pr[sinceDateIdx]); 
 			})
+			.on("click", circleClick)
 			.style("fill", circleFill);
 	
 			;
 			
 		var trans = new Array(curPrices.dateAry.length+1);
 		trans[sinceDateIdx] = dots.transition().duration(1000);
-		var transStartIdx = 0;		
+		var transStartIdx = sinceDateIdx;		
 			
 		for( var i = sinceDateIdx; i < curPrices.dateAry.length; i++ ) {			
 			
@@ -690,15 +720,15 @@ function createScatterPlot(data) {
 				return "0"; 
 			})
 			.style("fill", function(d) {
-					if(i==0 ) {    
+					if(i==sinceDateIdx ) {    
 						d.lastFillPriceSeen = d.pr[i];						
 						d.lastFillColor = "grey";
 						return d.lastFillColor;	
 					}
-					if(i == curPrices.dateAry.length-1) {
-						d.lastFillColor = circleFill(d);
-						return d.lastFillColor;	
-					}
+					// if(i == curPrices.dateAry.length-1) {
+					//	d.lastFillColor = circleFill(d);
+					//	return d.lastFillColor;	
+					// }
 					if(i >= d.pr.length && d.lastFillPriceSeen) {
 						d.lastFillColor = "blue";
 						return "blue";
@@ -775,8 +805,9 @@ function createScatterPlot(data) {
 function circleFill(d) { 
 		if(d.pr.length > 1 && !isNaN(d.pr[d.pr.length-1])) {
 			var lastVal =d.pr[d.pr.length-1]; 
-						if(!d.pr[curPrices.dateAry.length-1]) 
-							return "blue";
+			
+			if(!d.pr[curPrices.dateAry.length-1]) 
+				return "blue";
 						
 			var sinceDateIdx = +scatterDatePulldown[0][0].options[scatterDatePulldown[0][0].selectedIndex].value;
 							
@@ -796,6 +827,17 @@ function circleFill(d) {
 		}
 		
 	return "grey"; 
+}
+
+function circleClick(d) { 
+	window.open(eventURL + "/?ticket_id=" + d.id); 
+}
+
+function getParameterByName(name) {
+    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+        results = regex.exec(location.search);
+    return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
 }
 
 </script>
