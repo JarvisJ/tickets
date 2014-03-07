@@ -628,6 +628,7 @@ function createScatterPlot(data) {
 			.attr("r", 	 function(d) { 
 					d.curTransIdx = -1;
 					d.lastPriceSeen = d.pr[sinceDateIdx];
+					d.hasQty = false;
 					return "0"; 
 					if(d.pr.length > 1 && !isNaN(d.pr[d.pr.length-1])) {
 						if(!d.pr[curPrices.dateAry.length-1]) 
@@ -694,30 +695,37 @@ function createScatterPlot(data) {
 				})
 			.attr("r", 	 function(d) { 
 					if(d.pr.length > 1 && !isNaN(d.pr[d.pr.length-1])) {
-						if(!d.pr[i] && !d.lastPriceSeen) { 
+						if((!d.pr[i] && !d.lastPriceSeen )  ) { 
 							return "";	
 						}
 						
+						if( d.qt[i] &&  +d.qt[i] >=  minQty ) {
+							d.hasQty = true;
+						}
 						
-						if(!d.pr[curPrices.dateAry.length-1]) 
+						if( !d.hasQty) { 
+							return "";	
+						}
+						
+						if(!d.pr[curPrices.dateAry.length-1] ) 
 							return "3.5";
 						
 						var lastVal =d.pr[d.pr.length-1]; 
-						for(var i = curPrices.dateAry.length-2; i >= 0 && i>= sinceDateIdx; i-- ) { 
-							if( !d.pr[i] || isNaN(d.pr[i])) {
+						for(var j = curPrices.dateAry.length-2; j >= 0 && j>= sinceDateIdx; j-- ) { 
+							if( !d.pr[j] || isNaN(d.pr[j])) {
 								return "0";		
 							}
 							
-							if( +d.pr[i] < lastVal) {
+							if( +d.pr[j] < lastVal) {
 								return "3.5";	
 							}
-							if( +d.pr[i] > lastVal ) {
+							if( +d.pr[j] > lastVal ) {
 								return "3.5";	
 							}
 						}
 					}
 					   
-				return "0"; 
+				return ""; 
 			})
 			.style("fill", function(d) {
 					if(i==sinceDateIdx ) {    
@@ -729,7 +737,7 @@ function createScatterPlot(data) {
 					//	d.lastFillColor = circleFill(d);
 					//	return d.lastFillColor;	
 					// }
-					if(i >= d.pr.length && d.lastFillPriceSeen) {
+					if((i >= d.pr.length && d.lastFillPriceSeen) || +d.qt[i] < minQty) {
 						d.lastFillColor = "blue";
 						return "blue";
 					}
@@ -746,7 +754,7 @@ function createScatterPlot(data) {
 	
 							d.lastFillColor = "green";
 							var myRow = x(getSectionAdjustedRow(+d.rd,d.va));
-							if( myRow) {
+							if( myRow && +d.qt[i] >= minQty) {
 								var y1 = y(d.lastFillPriceSeen);
 								var y2 = y(+d.pr[i])
 								svg.append("line")
@@ -763,7 +771,7 @@ function createScatterPlot(data) {
 						if( +d.pr[i] <  d.lastFillPriceSeen ) {
 							
 							var myRow = x(getSectionAdjustedRow(+d.rd,d.va));
-							if(myRow) {
+							if(myRow &&  +d.qt[i] >= minQty ) {
 								var y1 = y(d.lastFillPriceSeen);
 								var y2 = y(+d.pr[i])
 								svg.append("line")

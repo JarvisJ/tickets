@@ -10,8 +10,10 @@ var ObjectID = require('mongodb').ObjectID;
 var dbURL = "mongodb://" + config.appSettings.mongolab.DB_USERNAME + ":" + config.appSettings.mongolab.DB_PASS + "@ds030827.mongolab.com:30827/MongoLab-cf";
 
 var port = process.env.PORT || 1337;
-var app = express.createServer();
+var app = express();
 app.listen(port);
+
+app.use(express.static(__dirname + '/public'));
 
 
 app.get('/', function (req, res) {
@@ -176,13 +178,5 @@ function insertCallback(err, docs) {
 
 }
 
-app.use(express.static(__dirname + '/public'));
-
-
-app.get('/baseball.html', function (req, res) {
-
-		
-  res.sendfile(__dirname + '/baseball.html');
-});
 
 

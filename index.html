@@ -208,7 +208,8 @@ var availableEvents = [{"id": "", "name": "Select an Event" },{ "id" : "4374340"
 							  { "id" : "4374342", "name": "BTT Session 5" },								  
 							  { "id" : "4380727", "name": "BTT Session 6" },
 							  { "id" : "4373476", "name": "BTT All Sessions" },
-								{ "id" : "4351791", "name": "IU @ Michigan" }];							  
+								{ "id" : "4351791", "name": "IU @ Michigan" }];	
+var refreshTries = 0;
 							  
 eventPulldown.selectAll("option")
       .data(availableEvents).enter()
@@ -250,6 +251,16 @@ function refreshPage() {
 		scatterSvg.remove();
 	
 	d3.json("/curprices/" + eventID,function(pCurPrices) {
+			if( 1== 0 && !pCurPrices && refreshTries < 2) {
+				// didn't get file. Try again. We only do this because Azure seems to have problems
+				// retrieving the file if this is the first hit to the site in a while.
+					refreshTries++;
+					refreshPage();
+					return;
+			
+			}
+			refreshTries = 2;
+			
 			curPrices = pCurPrices.histPrices;
 			histPrices = pCurPrices.histPrices;
 			
