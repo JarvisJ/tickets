@@ -251,7 +251,7 @@ function refreshPage() {
 		scatterSvg.remove();
 	
 	d3.json("/curprices/" + eventID,function(pCurPrices) {
-			if( 1== 0 && !pCurPrices && refreshTries < 2) {
+			if(!pCurPrices && refreshTries < 2) {
 				// didn't get file. Try again. We only do this because Azure seems to have problems
 				// retrieving the file if this is the first hit to the site in a while.
 					refreshTries++;
